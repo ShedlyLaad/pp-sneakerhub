@@ -1,0 +1,23 @@
+[
+  {
+    "id": "1",
+    "name": "Adidas Campus",
+    "price": "$80.00",
+    "image": "assets/Produits1.jpeg",
+    "storeLocation": "Store A"
+  },
+  {
+    "id": "2",
+    "name": "Adidas Y-3",
+    "price": "$150.00",
+    "image": "assets/produits4.png",
+    "storeLocation": "Store B"
+  },
+  {
+    "id": "3",
+    "name": "Trail Running Shoes",
+    "price": "$120.00",
+    "image": "assets/produits6.png",
+    "storeLocation": "Store C"
+  }
+]
