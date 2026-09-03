@@ -1,43 +1,46 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import products from '../products.json';
 import ProductCard from '../components/ProductCard';
+import { LoadingState, ErrorState, EmptyState } from '../components/ScreenState';
+import * as productsApi from '../services/api/productsApi';
 
 const StoreScreen = ({ navigation }) => {
   const [search, setSearch] = useState('');
-  const [filteredProducts, setFilteredProducts] = useState(products);
   const [sortOrder, setSortOrder] = useState('A-Z');
+  const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+
+  const loadProducts = useCallback(async (searchText, sort) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await productsApi.fetchProducts({ search: searchText, sort });
+      setProducts(res.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts(search, sortOrder);
+    // Only run once on mount; subsequent loads are triggered explicitly below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSearch = (text) => {
     setSearch(text);
-    filterAndSortProducts(text, sortOrder);
+    loadProducts(text, sortOrder);
   };
 
   const handleSort = (order) => {
     setSortOrder(order);
-    filterAndSortProducts(search, order);
-  };
-
-  const filterAndSortProducts = (searchText, order) => {
-    let filtered = products;
-    if (searchText) {
-      filtered = products.filter(item => {
-        const itemData = item.name ? item.name.toUpperCase() : ''.toUpperCase();
-        const textData = searchText.toUpperCase();
-        return itemData.indexOf(textData) > -1;
-      });
-    }
-    if (order === 'A-Z') {
-      filtered = filtered.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (order === 'Z-A') {
-      filtered = filtered.sort((a, b) => b.name.localeCompare(a.name));
-    } else if (order === 'Latest') {
-      filtered = filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
-    }
-    setFilteredProducts(filtered);
+    loadProducts(search, order);
   };
 
   const renderFilterModal = () => (
@@ -50,33 +53,20 @@ const StoreScreen = ({ navigation }) => {
       <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <TouchableOpacity
-              style={styles.filterOption}
-              onPress={() => {
-                handleSort('A-Z');
-                setModalVisible(false);
-              }}
-            >
-              <Text style={styles.filterText}>A-Z</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.filterOption}
-              onPress={() => {
-                handleSort('Z-A');
-                setModalVisible(false);
-              }}
-            >
-              <Text style={styles.filterText}>Z-A</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.filterOption}
-              onPress={() => {
-                handleSort('Latest');
-                setModalVisible(false);
-              }}
-            >
-              <Text style={styles.filterText}>Latest</Text>
-            </TouchableOpacity>
+            {['A-Z', 'Z-A', 'Latest', 'price-asc', 'price-desc'].map((order) => (
+              <TouchableOpacity
+                key={order}
+                style={styles.filterOption}
+                onPress={() => {
+                  handleSort(order);
+                  setModalVisible(false);
+                }}
+              >
+                <Text style={styles.filterText}>
+                  {order === 'price-asc' ? 'Price: low to high' : order === 'price-desc' ? 'Price: high to low' : order}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -92,7 +82,7 @@ const StoreScreen = ({ navigation }) => {
           placeholder="Search..."
           placeholderTextColor="#aaa"
           value={search}
-          onChangeText={(text) => handleSearch(text)}
+          onChangeText={handleSearch}
         />
         <TouchableOpacity style={styles.searchIcon}>
           <Ionicons name="search" size={20} color="#fff" />
@@ -104,21 +94,23 @@ const StoreScreen = ({ navigation }) => {
 
       {renderFilterModal()}
 
-      <ScrollView contentContainerStyle={styles.productList} >
-        {filteredProducts.map((item) => (
-          <ProductCard
-            key={item.id}
-            product={item}
-            onPress={() => navigation.navigate('ProductDetails', { product: item })}
-            style={styles.productCard}
-          />
-        ))}
-      </ScrollView>
-
-      {filteredProducts.length === 0 && (
-        <View style={styles.noProductView}>
-          <Text style={styles.noProductText}>No Product Found</Text>
-        </View>
+      {isLoading ? (
+        <LoadingState label="Loading products…" />
+      ) : error ? (
+        <ErrorState message={error} onRetry={() => loadProducts(search, sortOrder)} />
+      ) : products.length === 0 ? (
+        <EmptyState message="No Product Found" />
+      ) : (
+        <ScrollView contentContainerStyle={styles.productList}>
+          {products.map((item) => (
+            <ProductCard
+              key={item.id}
+              product={item}
+              onPress={() => navigation.navigate('ProductDetails', { productId: item.id })}
+              style={styles.productCard}
+            />
+          ))}
+        </ScrollView>
       )}
     </LinearGradient>
   );
@@ -155,19 +147,12 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   productList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     paddingBottom: 20,
   },
   productCard: {
-    marginRight: 15,
-  },
-  noProductView: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  noProductText: {
-    fontSize: 18,
-    color: '#F1FAC0',
+    marginBottom: 15,
   },
   modalOverlay: {
     flex: 1,

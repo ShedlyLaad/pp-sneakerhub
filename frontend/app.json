@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "projetBoutique",
+    "slug": "projetBoutique",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "SnaekersHub uses your location to show the nearest boutique.",
+        "NSCameraUsageDescription": "SnaekersHub uses the camera to let you photograph products you add.",
+        "NSPhotoLibraryUsageDescription": "SnaekersHub needs access to your photos to attach a product image."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "SnaekersHub uses your location to show the nearest boutique."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "SnaekersHub needs access to your photos to attach a product image."
+        }
+      ]
+    ]
+  }
+}
