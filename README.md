@@ -1,4 +1,4 @@
-# SnaekersHub (projetBoutique)
+# SnaekersHub
 
 Application mobile Expo/React Native (marketplace de sneakers) + API backend Node/Express/MongoDB.
 
