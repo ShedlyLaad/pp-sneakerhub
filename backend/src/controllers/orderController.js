@@ -1,13 +1,37 @@
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 const ApiError = require('../utils/ApiError');
 const asyncHandler = require('../utils/asyncHandler');
 const { getOrCreateCart } = require('./cartController');
 
-const createOrder = asyncHandler(async (req, res) => {
-  const { shippingAddress } = req.body;
-  if (!shippingAddress || !shippingAddress.line1 || !shippingAddress.city || !shippingAddress.country) {
-    throw new ApiError(400, 'shippingAddress with line1, city and country is required');
+function resolveShippingAddress(req, addressId, shippingAddress) {
+  if (addressId) {
+    const saved = req.user.addresses.id(addressId);
+    if (!saved) {
+      throw new ApiError(404, 'Address not found');
+    }
+    return {
+      line1: saved.line1,
+      city: saved.city,
+      postalCode: saved.postalCode,
+      country: saved.country,
+    };
   }
+
+  if (!shippingAddress || !shippingAddress.line1 || !shippingAddress.city || !shippingAddress.country) {
+    throw new ApiError(400, 'Provide an addressId or a shippingAddress with line1, city and country');
+  }
+  return {
+    line1: shippingAddress.line1,
+    city: shippingAddress.city,
+    postalCode: shippingAddress.postalCode || '',
+    country: shippingAddress.country,
+  };
+}
+
+const createOrder = asyncHandler(async (req, res) => {
+  const { addressId, shippingAddress } = req.body;
+  const resolvedAddress = resolveShippingAddress(req, addressId, shippingAddress);
 
   const cart = await getOrCreateCart(req.user._id);
   await cart.populate('items.product');
@@ -17,30 +41,67 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Your cart is empty');
   }
 
-  const orderItems = validItems.map((item) => ({
-    product: item.product._id,
-    name: item.product.name,
-    price: item.product.price,
-    quantity: item.quantity,
-  }));
+  // The backend is the source of truth for stock and pricing: decrement each
+  // product atomically (a single conditional update, so two concurrent
+  // checkouts can never both succeed past the last unit), then price the
+  // order off the price that update just confirmed - never the client's.
+  //
+  // The database here is a standalone MongoDB instance (no replica set), so
+  // multi-document ACID transactions aren't available. Each decrement is
+  // still atomic on its own; if a later item in the cart fails, the ones
+  // already decremented are restored (compensation) before reporting the error.
+  const decremented = [];
+  try {
+    const orderItems = [];
+    for (const item of validItems) {
+      const product = await Product.findOneAndUpdate(
+        { _id: item.product._id, stock: { $gte: item.quantity } },
+        { $inc: { stock: -item.quantity } },
+        { new: true }
+      );
 
-  const total = Number(
-    orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2)
-  );
+      if (!product) {
+        const current = await Product.findById(item.product._id);
+        if (!current) {
+          throw new ApiError(404, `Product no longer available: ${item.product.name}`);
+        }
+        throw new ApiError(
+          409,
+          `Insufficient stock for "${current.name}" (only ${current.stock} left, ${item.quantity} requested)`
+        );
+      }
 
-  const order = await Order.create({
-    user: req.user._id,
-    items: orderItems,
-    total,
-    shippingAddress,
-    status: 'pending',
-  });
+      decremented.push({ productId: product._id, quantity: item.quantity });
+      orderItems.push({
+        product: product._id,
+        name: product.name,
+        price: product.price,
+        quantity: item.quantity,
+      });
+    }
 
-  // Empty the cart after a successful order
-  cart.items = [];
-  await cart.save();
+    const total = Number(orderItems.reduce((sum, i) => sum + i.price * i.quantity, 0).toFixed(2));
 
-  res.status(201).json({ success: true, data: order });
+    const order = await Order.create({
+      user: req.user._id,
+      items: orderItems,
+      total,
+      shippingAddress: resolvedAddress,
+      status: 'pending',
+      paymentMethod: 'cod',
+      paymentStatus: 'pending',
+    });
+
+    cart.items = [];
+    await cart.save();
+
+    res.status(201).json({ success: true, data: order });
+  } catch (err) {
+    await Promise.all(
+      decremented.map((d) => Product.updateOne({ _id: d.productId }, { $inc: { stock: d.quantity } }))
+    );
+    throw err;
+  }
 });
 
 const listMyOrders = asyncHandler(async (req, res) => {

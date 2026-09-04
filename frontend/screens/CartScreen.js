@@ -1,26 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator, TextInput, Modal } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { LoadingState, ErrorState, EmptyState } from '../components/ScreenState';
-import * as ordersApi from '../services/api/ordersApi';
+import { LoadingState, ErrorState, EmptyState, LoginRequired } from '../components/ScreenState';
 
 const CartScreen = ({ navigation }) => {
   const { isAuthenticated } = useAuth();
   const { cart, isLoading, error, refreshCart, updateQuantity, removeFromCart } = useCart();
-  const [checkoutVisible, setCheckoutVisible] = useState(false);
-  const [placing, setPlacing] = useState(false);
-  const [checkoutError, setCheckoutError] = useState(null);
-  const [address, setAddress] = useState({ line1: '', city: '', postalCode: '', country: '' });
 
   if (!isAuthenticated) {
     return (
       <View style={styles.container}>
-        <EmptyState message="Log in to view your cart." />
-        <TouchableOpacity style={styles.checkoutButton} onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.checkoutButtonText}>Log In</Text>
-        </TouchableOpacity>
+        <LoginRequired navigation={navigation} message="Log in to view your cart." />
       </View>
     );
   }
@@ -40,25 +32,6 @@ const CartScreen = ({ navigation }) => {
       </View>
     );
   }
-
-  const handlePlaceOrder = async () => {
-    if (!address.line1.trim() || !address.city.trim() || !address.country.trim()) {
-      setCheckoutError('Address line, city and country are required.');
-      return;
-    }
-    setPlacing(true);
-    setCheckoutError(null);
-    try {
-      await ordersApi.createOrder({ shippingAddress: address });
-      await refreshCart();
-      setCheckoutVisible(false);
-      navigation.navigate('Profile', { screen: 'Orders', params: { justPlaced: true } });
-    } catch (err) {
-      setCheckoutError(err.message);
-    } finally {
-      setPlacing(false);
-    }
-  };
 
   return (
     <View style={styles.container}>
@@ -94,7 +67,8 @@ const CartScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <Text style={styles.quantityText}>{item.quantity}</Text>
                 <TouchableOpacity
-                  style={styles.quantityButton}
+                  style={[styles.quantityButton, item.quantity >= item.product.stock && styles.quantityButtonDisabled]}
+                  disabled={item.quantity >= item.product.stock}
                   onPress={() => updateQuantity(item.product.id, item.quantity + 1)}
                 >
                   <Text style={styles.quantityButtonText}>+</Text>
@@ -112,55 +86,12 @@ const CartScreen = ({ navigation }) => {
         <Text style={styles.totalText}>Total: ${cart.total.toFixed(2)}</Text>
         <TouchableOpacity
           style={[styles.checkoutButton, cart.items.length === 0 && styles.checkoutButtonDisabled]}
-          onPress={() => setCheckoutVisible(true)}
+          onPress={() => navigation.navigate('Checkout')}
           disabled={cart.items.length === 0}
         >
-          <Text style={styles.checkoutButtonText}>Checkout</Text>
+          <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
         </TouchableOpacity>
       </View>
-
-      <Modal visible={checkoutVisible} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Shipping address</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Address line"
-              placeholderTextColor="#888"
-              value={address.line1}
-              onChangeText={(v) => setAddress((a) => ({ ...a, line1: v }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="City"
-              placeholderTextColor="#888"
-              value={address.city}
-              onChangeText={(v) => setAddress((a) => ({ ...a, city: v }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Postal code"
-              placeholderTextColor="#888"
-              value={address.postalCode}
-              onChangeText={(v) => setAddress((a) => ({ ...a, postalCode: v }))}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Country"
-              placeholderTextColor="#888"
-              value={address.country}
-              onChangeText={(v) => setAddress((a) => ({ ...a, country: v }))}
-            />
-            {checkoutError && <Text style={styles.checkoutError}>{checkoutError}</Text>}
-            <TouchableOpacity style={styles.checkoutButton} onPress={handlePlaceOrder} disabled={placing}>
-              {placing ? <ActivityIndicator color="#000" /> : <Text style={styles.checkoutButtonText}>Place order</Text>}
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setCheckoutVisible(false)} style={styles.cancelButton}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };
@@ -212,6 +143,9 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 5,
   },
+  quantityButtonDisabled: {
+    opacity: 0.4,
+  },
   quantityButtonText: {
     fontSize: 18,
     color: '#000000',
@@ -249,42 +183,6 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontSize: 18,
     fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalContainer: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    padding: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    color: '#F1FAC0',
-    marginBottom: 16,
-    fontWeight: '600',
-  },
-  input: {
-    backgroundColor: '#333',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    color: '#fff',
-  },
-  checkoutError: {
-    color: '#ff5c5c',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  cancelButton: {
-    marginTop: 12,
-    alignItems: 'center',
-  },
-  cancelText: {
-    color: '#aaa',
   },
 });
 

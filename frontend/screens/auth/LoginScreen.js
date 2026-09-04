@@ -19,16 +19,31 @@ const LoginScreen = ({ navigation }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleLogin = async () => {
-    if (!email.trim() || !password) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
       setError('Please enter your email and password.');
+      return;
+    }
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setError('Please enter a valid email address.');
       return;
     }
     setError(null);
     setSubmitting(true);
-    const result = await login(email.trim(), password);
+    const result = await login(trimmedEmail, password);
     setSubmitting(false);
-    if (!result.success) {
+    if (result.success) {
+      // Login is presented as a modal on top of Tabs: close it and return to
+      // whatever screen the user came from (e.g. Cart, Profile).
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Tabs');
+      }
+    } else {
       setError(result.error);
     }
   };

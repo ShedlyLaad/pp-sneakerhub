@@ -20,20 +20,36 @@ const RegisterScreen = ({ navigation }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   const handleRegister = async () => {
-    if (!name.trim() || !email.trim() || !password) {
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    if (!trimmedName || !trimmedEmail || !password) {
       setError('Please fill in all fields.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
       return;
     }
     setError(null);
     setSubmitting(true);
-    const result = await register(name.trim(), email.trim(), password);
+    const result = await register(trimmedName, trimmedEmail, password);
     setSubmitting(false);
-    if (!result.success) {
+    if (result.success) {
+      // Register is presented as a modal on top of Tabs: close it now that
+      // the account was created and the user is already logged in.
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate('Tabs');
+      }
+    } else {
       setError(result.error);
     }
   };
@@ -65,7 +81,7 @@ const RegisterScreen = ({ navigation }) => {
         />
         <TextInput
           style={styles.input}
-          placeholder="Password (min. 6 characters)"
+          placeholder="Password (min. 8 characters)"
           placeholderTextColor="#888"
           secureTextEntry
           value={password}

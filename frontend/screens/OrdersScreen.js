@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { LoadingState, ErrorState, EmptyState } from '../components/ScreenState';
+import { LoadingState, ErrorState, EmptyState, LoginRequired } from '../components/ScreenState';
 import * as ordersApi from '../services/api/ordersApi';
 
 const STATUS_COLORS = {
@@ -39,10 +39,7 @@ const OrdersScreen = ({ navigation }) => {
   if (!isAuthenticated) {
     return (
       <View style={styles.container}>
-        <EmptyState message="Log in to see your orders." />
-        <TouchableOpacity style={styles.loginButton} onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.loginButtonText}>Log In</Text>
-        </TouchableOpacity>
+        <LoginRequired navigation={navigation} message="Log in to see your orders." />
       </View>
     );
   }
@@ -130,19 +127,6 @@ const styles = StyleSheet.create({
     color: '#2CDD0D',
     fontWeight: '700',
     marginTop: 8,
-  },
-  loginButton: {
-    backgroundColor: '#2CDD0D',
-    padding: 15,
-    borderRadius: 5,
-    width: '80%',
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
-  loginButtonText: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: '600',
   },
 });
 

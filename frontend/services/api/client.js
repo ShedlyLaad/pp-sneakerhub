@@ -13,6 +13,21 @@ export const API_BASE_URL =
 
 export { getToken, setToken };
 
+// Requests that are expected to fail with 401 on bad credentials rather than
+// an expired session (login always starts with no token, register never has
+// one either) — these must never trigger the global auto-logout below.
+const AUTH_ENDPOINTS_EXEMPT_FROM_AUTO_LOGOUT = ['/auth/login', '/auth/register'];
+
+// Set by AuthContext once it mounts, so a 401 on *any* authenticated request
+// (not just the initial session restore) clears the stale token and signs the
+// user out immediately, instead of leaving the app stuck on a screen that
+// keeps failing with "invalid or expired token" until the user manually logs
+// out and back in.
+let unauthorizedHandler = null;
+export function onUnauthorized(handler) {
+  unauthorizedHandler = handler;
+}
+
 const client = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
@@ -37,6 +52,12 @@ client.interceptors.response.use(
     } else if (error.request) {
       message = 'Could not reach the server. Is the backend running?';
     }
+
+    const isAuthEndpoint = AUTH_ENDPOINTS_EXEMPT_FROM_AUTO_LOGOUT.includes(error.config?.url);
+    if (error.response?.status === 401 && !isAuthEndpoint && unauthorizedHandler) {
+      unauthorizedHandler();
+    }
+
     const normalized = new Error(message);
     normalized.status = error.response?.status;
     return Promise.reject(normalized);

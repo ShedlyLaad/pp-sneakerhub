@@ -1,6 +1,18 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+const addressSchema = new mongoose.Schema(
+  {
+    label: { type: String, trim: true, default: 'Home' },
+    line1: { type: String, required: true, trim: true },
+    city: { type: String, required: true, trim: true },
+    postalCode: { type: String, trim: true, default: '' },
+    country: { type: String, required: true, trim: true },
+    isDefault: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -14,12 +26,8 @@ const userSchema = new mongoose.Schema(
     },
     passwordHash: { type: String, required: true, select: false },
     role: { type: String, enum: ['customer', 'seller', 'admin'], default: 'customer' },
-    address: {
-      line1: { type: String, trim: true },
-      city: { type: String, trim: true },
-      postalCode: { type: String, trim: true },
-      country: { type: String, trim: true },
-    },
+    addresses: { type: [addressSchema], default: [] },
+    favorites: { type: [mongoose.Schema.Types.ObjectId], ref: 'Product', default: [] },
   },
   { timestamps: true }
 );
@@ -34,7 +42,16 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     name: this.name,
     email: this.email,
     role: this.role,
-    address: this.address || {},
+    addresses: (this.addresses || []).map((a) => ({
+      id: a._id.toString(),
+      label: a.label,
+      line1: a.line1,
+      city: a.city,
+      postalCode: a.postalCode,
+      country: a.country,
+      isDefault: a.isDefault,
+    })),
+    favoriteIds: (this.favorites || []).map((id) => id.toString()),
     createdAt: this.createdAt,
   };
 };

@@ -2,15 +2,17 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
-import { Feather, FontAwesome5, EvilIcons } from '@expo/vector-icons';
+import { Feather, FontAwesome5 } from '@expo/vector-icons';
 
 import HomeScreen from '../screens/HomeScreen';
 import ProductDetails from '../screens/ProductDetails';
 import CartScreen from '../screens/CartScreen';
-import BoutiqueScreen from '../screens/BoutiqueScreen';
-import AddProductScreen from '../screens/AddProductScreen';
+import CheckoutScreen from '../screens/CheckoutScreen';
+import OrderConfirmationScreen from '../screens/OrderConfirmationScreen';
 import StoreScreen from '../screens/StoreScreen';
+import FavoritesScreen from '../screens/FavoritesScreen';
 import OrdersScreen from '../screens/OrdersScreen';
+import AddressesScreen from '../screens/AddressesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
@@ -32,15 +34,17 @@ function CartStackScreen() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="CartScreen" component={CartScreen} />
-    </Stack.Navigator>
-  );
-}
-
-function BoutiqueStackScreen() {
-  return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="BoutiqueScreen" component={BoutiqueScreen} />
-      <Stack.Screen name="AddProductScreen" component={AddProductScreen} options={{ headerShown: true, title: 'Add Product' }} />
+      <Stack.Screen name="Checkout" component={CheckoutScreen} options={{ headerShown: true, title: 'Checkout' }} />
+      <Stack.Screen
+        name="Addresses"
+        component={AddressesScreen}
+        options={{ headerShown: true, title: 'Select Address' }}
+      />
+      <Stack.Screen
+        name="OrderConfirmation"
+        component={OrderConfirmationScreen}
+        options={{ headerShown: false, gestureEnabled: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -54,11 +58,21 @@ function StoreStackScreen() {
   );
 }
 
+function FavoritesStackScreen() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="FavoritesScreen" component={FavoritesScreen} />
+      <Stack.Screen name="ProductDetails" component={ProductDetails} options={{ headerShown: true, title: 'Product Details' }} />
+    </Stack.Navigator>
+  );
+}
+
 function ProfileStackScreen() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
       <Stack.Screen name="Orders" component={OrdersScreen} options={{ headerShown: true, title: 'My Orders' }} />
+      <Stack.Screen name="Addresses" component={AddressesScreen} options={{ headerShown: true, title: 'My Addresses' }} />
     </Stack.Navigator>
   );
 }
@@ -73,10 +87,10 @@ function Tabs() {
             return <Feather name="home" size={size} color={color} />;
           } else if (route.name === 'Store') {
             return <FontAwesome5 name="store" size={size} color={color} />;
+          } else if (route.name === 'Favorites') {
+            return <Feather name="heart" size={size} color={color} />;
           } else if (route.name === 'Cart') {
             return <Feather name="shopping-cart" size={size} color={color} />;
-          } else if (route.name === 'Boutique') {
-            return <EvilIcons name="plus" size={size} color={color} />;
           } else if (route.name === 'Profile') {
             return <Feather name="user" size={size} color={color} />;
           }
@@ -88,8 +102,8 @@ function Tabs() {
     >
       <Tab.Screen name="Home" component={HomeStackScreen} />
       <Tab.Screen name="Store" component={StoreStackScreen} />
+      <Tab.Screen name="Favorites" component={FavoritesStackScreen} />
       <Tab.Screen name="Cart" component={CartStackScreen} />
-      <Tab.Screen name="Boutique" component={BoutiqueStackScreen} />
       <Tab.Screen name="Profile" component={ProfileStackScreen} />
     </Tab.Navigator>
   );

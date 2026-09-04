@@ -8,6 +8,7 @@ const connectDB = require('../config/db');
 const User = require('../models/User');
 const Product = require('../models/Product');
 const Cart = require('../models/Cart');
+const Order = require('../models/Order');
 
 const DEMO_PASSWORD = 'Password123!';
 
@@ -42,14 +43,19 @@ function buildSneakers(count) {
     const name = `${brand} ${model} - ${color}`;
     const price = Number((45 + ((i * 37) % 260)).toFixed(2)); // spread between $45 and $305
     const stock = 5 + ((i * 13) % 46); // between 5 and 50
+    const onSale = i % 4 === 0; // every 4th product carries a real discount
+    const category = i % 3 === 0 ? 'basketball' : i % 3 === 1 ? 'running' : 'lifestyle';
     products.push({
       name,
       description: `${brand} ${model} sneaker in ${color} colorway. Comfortable everyday wear.`,
       price,
+      compareAtPrice: onSale ? Number((price * 1.3).toFixed(2)) : null,
+      brand,
       image: `https://picsum.photos/seed/snaekershub-${i + 1}/600/600`,
       storeLocation: pick(STORES, i),
-      category: 'sneakers',
+      category,
       stock,
+      featured: i % 7 === 0, // a curated subset, not every product
     });
   }
   return products;
@@ -98,11 +104,38 @@ async function seedProducts(ownerId, count) {
   console.log(`[seed:demo] Products created: ${created}, skipped (already existed): ${skipped}`);
 }
 
+// A few completed orders so "Best Sellers" (an aggregation over real orders,
+// not a placeholder) has something to rank on a fresh database.
+async function seedOrders(buyer) {
+  const existing = await Order.countDocuments({ user: buyer._id });
+  if (existing > 0) {
+    console.log('[seed:demo] Demo orders already exist, skipping.');
+    return;
+  }
+
+  const popularProducts = await Product.find().sort({ price: 1 }).limit(6);
+  if (popularProducts.length === 0) return;
+
+  const orders = popularProducts.slice(0, 4).map((p, i) => ({
+    user: buyer._id,
+    items: [{ product: p._id, name: p.name, price: p.price, quantity: 3 - (i % 3) }],
+    total: Number((p.price * (3 - (i % 3))).toFixed(2)),
+    shippingAddress: { line1: '12 Rue de la Liberté', city: 'Tunis', postalCode: '1000', country: 'Tunisia' },
+    status: 'delivered',
+    paymentMethod: 'cod',
+    paymentStatus: 'paid',
+  }));
+
+  await Order.insertMany(orders);
+  console.log(`[seed:demo] Created ${orders.length} demo order(s) for best-sellers data.`);
+}
+
 async function run() {
   await connectDB();
 
   const users = await seedUsers();
   await seedProducts(users[0]._id, 50);
+  await seedOrders(users[0]);
 
   const totalUsers = await User.countDocuments();
   const totalProducts = await Product.countDocuments();

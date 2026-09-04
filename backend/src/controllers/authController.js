@@ -53,9 +53,13 @@ const me = asyncHandler(async (req, res) => {
 });
 
 const updateMe = asyncHandler(async (req, res) => {
-  const { name, address } = req.body;
-  if (name !== undefined) req.user.name = name;
-  if (address !== undefined) req.user.address = { ...req.user.address, ...address };
+  const { name } = req.body;
+  if (name !== undefined) {
+    if (!name.trim()) {
+      throw new ApiError(400, 'name cannot be empty');
+    }
+    req.user.name = name.trim();
+  }
   await req.user.save();
   res.json({ success: true, data: { user: req.user.toSafeJSON() } });
 });

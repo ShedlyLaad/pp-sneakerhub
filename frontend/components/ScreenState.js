@@ -33,6 +33,20 @@ export function EmptyState({ message }) {
   );
 }
 
+// Shown whenever a guest attempts an action that requires an account
+// (favorites, cart, checkout, orders, profile) - consistent wording and a
+// direct path to Login, per the "protected action" rule in the app spec.
+export function LoginRequired({ navigation, message = 'Please login to continue.' }) {
+  return (
+    <View style={styles.center}>
+      <Text style={styles.label}>{message}</Text>
+      <TouchableOpacity style={styles.retryButton} onPress={() => navigation.navigate('Login')}>
+        <Text style={styles.retryText}>Log In</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   center: {
     flex: 1,

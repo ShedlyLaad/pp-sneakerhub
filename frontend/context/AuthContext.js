@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import * as authApi from '../services/api/authApi';
-import { getToken, setToken } from '../services/api/client';
+import { getToken, setToken, onUnauthorized } from '../services/api/client';
 
 const AuthContext = createContext(null);
 
@@ -59,6 +59,16 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     await setToken(null);
     setUser(null);
+  }, []);
+
+  // If any authenticated request comes back 401 (session expired, or the
+  // account was deleted), sign the user out immediately instead of leaving
+  // the app stuck on a screen that keeps failing silently.
+  useEffect(() => {
+    onUnauthorized(() => {
+      setToken(null);
+      setUser(null);
+    });
   }, []);
 
   const updateProfile = useCallback(async (payload) => {

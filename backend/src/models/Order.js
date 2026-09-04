@@ -27,6 +27,19 @@ const orderSchema = new mongoose.Schema(
       default: 'pending',
       index: true,
     },
+    // Only "cash on delivery" is actually wired end-to-end today. The field
+    // exists so a real payment provider (e.g. Stripe) can be plugged in later
+    // without a schema migration or touching the order flow.
+    paymentMethod: {
+      type: String,
+      enum: ['cod'],
+      default: 'cod',
+    },
+    paymentStatus: {
+      type: String,
+      enum: ['pending', 'paid'],
+      default: 'pending',
+    },
   },
   { timestamps: true }
 );

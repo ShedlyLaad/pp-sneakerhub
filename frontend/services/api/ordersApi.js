@@ -1,7 +1,7 @@
 import client from './client';
 
-export function createOrder({ shippingAddress }) {
-  return client.post('/orders', { shippingAddress });
+export function createOrder({ addressId, shippingAddress }) {
+  return client.post('/orders', { addressId, shippingAddress });
 }
 
 export function fetchMyOrders() {
