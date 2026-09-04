@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Modal, TouchableWithoutFeedback } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProductCard from '../components/ProductCard';
 import { LoadingState, ErrorState, EmptyState } from '../components/ScreenState';
 import * as productsApi from '../services/api/productsApi';
@@ -15,6 +16,7 @@ const SORT_LABELS = {
 const EMPTY_FILTERS = { category: undefined, brand: undefined, minPrice: '', maxPrice: '', inStock: false };
 
 const StoreScreen = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const [sortOrder, setSortOrder] = useState(route.params?.sort || 'A-Z');
   const [filters, setFilters] = useState({ ...EMPTY_FILTERS, ...route.params });
@@ -197,7 +199,7 @@ const StoreScreen = ({ navigation, route }) => {
   );
 
   return (
-    <LinearGradient colors={['#000000', '#000000']} style={styles.container}>
+    <LinearGradient colors={['#000000', '#000000']} style={[styles.container, { paddingTop: insets.top + 20 }]}>
       <Text style={styles.subtitle}>Store</Text>
       <View style={styles.searchBarContainer}>
         <TextInput

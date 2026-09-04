@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, FlatList, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProductCard from '../components/ProductCard';
 import { LoadingState, ErrorState, EmptyState } from '../components/ScreenState';
 import * as productsApi from '../services/api/productsApi';
@@ -19,6 +20,7 @@ const FOOTER_LINKS = {
 const HomeScreen = ({ navigation }) => {
   const { isAuthenticated, user } = useAuth();
   const { itemCount } = useCart();
+  const insets = useSafeAreaInsets();
 
   const [search, setSearch] = useState('');
   const [searchResults, setSearchResults] = useState(null);
@@ -104,7 +106,7 @@ const HomeScreen = ({ navigation }) => {
     );
 
   return (
-    <LinearGradient colors={['#000000', '#000000']} style={styles.container}>
+    <LinearGradient colors={['#000000', '#000000']} style={[styles.container, { paddingTop: insets.top + 12 }]}>
       <View style={styles.header}>
         <Text style={styles.logo}>SnaekersHub</Text>
         <View style={styles.headerActions}>
@@ -221,7 +223,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 12,
     backgroundColor: '#000000',
   },
   header: {

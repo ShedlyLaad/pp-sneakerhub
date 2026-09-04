@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppNavigator from './navigation/AppNavigator';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
@@ -38,8 +39,14 @@ const styles = {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Root />
-    </AuthProvider>
+    // Makes safe-area insets (status bar height, notch, home indicator)
+    // available to every screen via useSafeAreaInsets()/SafeAreaView, so
+    // headerless screens (Home, Store, Cart, Favorites, Profile...) can push
+    // their content below the status bar instead of rendering under it.
+    <SafeAreaProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

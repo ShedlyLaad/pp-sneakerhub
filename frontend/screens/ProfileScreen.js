@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, TextInput, ActivityIndicator } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { LoginRequired } from '../components/ScreenState';
@@ -12,10 +13,12 @@ const ProfileScreen = ({ navigation }) => {
   const [name, setName] = useState(user?.name || '');
   const [saving, setSaving] = useState(false);
   const [editError, setEditError] = useState(null);
+  const insets = useSafeAreaInsets();
+  const containerStyle = [styles.container, { paddingTop: insets.top + 24 }];
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <LoginRequired navigation={navigation} message="Log in to see your profile." />
       </View>
     );
@@ -44,7 +47,7 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={containerStyle}>
       <View style={styles.avatar}>
         <Feather name="user" size={40} color="#000" />
       </View>

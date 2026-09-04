@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { LoadingState, ErrorState, EmptyState, LoginRequired } from '../components/ScreenState';
@@ -8,10 +9,12 @@ import { LoadingState, ErrorState, EmptyState, LoginRequired } from '../componen
 const CartScreen = ({ navigation }) => {
   const { isAuthenticated } = useAuth();
   const { cart, isLoading, error, refreshCart, updateQuantity, removeFromCart } = useCart();
+  const insets = useSafeAreaInsets();
+  const containerStyle = [styles.container, { paddingTop: insets.top + 20 }];
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <LoginRequired navigation={navigation} message="Log in to view your cart." />
       </View>
     );
@@ -19,7 +22,7 @@ const CartScreen = ({ navigation }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <LoadingState label="Loading your cart…" />
       </View>
     );
@@ -27,14 +30,14 @@ const CartScreen = ({ navigation }) => {
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <ErrorState message={error} onRetry={refreshCart} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={containerStyle}>
       {cart.items.length === 0 ? (
         <EmptyState message="Your cart is empty." />
       ) : (

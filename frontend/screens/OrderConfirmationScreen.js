@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const OrderConfirmationScreen = ({ route, navigation }) => {
   const { order } = route.params;
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + 40 }]}>
       <View style={styles.iconCircle}>
         <Feather name="check" size={40} color="#000" />
       </View>
@@ -50,7 +52,7 @@ const OrderConfirmationScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000000', alignItems: 'center', padding: 24, paddingTop: 60 },
+  container: { flex: 1, backgroundColor: '#000000', alignItems: 'center', padding: 24 },
   iconCircle: {
     width: 80,
     height: 80,

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useCart } from '../context/CartContext';
@@ -11,10 +12,12 @@ const FavoritesScreen = ({ navigation }) => {
   const { favorites, isLoading, error, removeFavorite, refreshFavorites } = useFavorites();
   const { addToCart } = useCart();
   const [addingId, setAddingId] = useState(null);
+  const insets = useSafeAreaInsets();
+  const containerStyle = [styles.container, { paddingTop: insets.top + 20 }];
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <LoginRequired navigation={navigation} message="Log in to see your favorites." />
       </View>
     );
@@ -22,7 +25,7 @@ const FavoritesScreen = ({ navigation }) => {
 
   if (isLoading) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <LoadingState label="Loading your favorites…" />
       </View>
     );
@@ -30,7 +33,7 @@ const FavoritesScreen = ({ navigation }) => {
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <View style={containerStyle}>
         <ErrorState message={error} onRetry={refreshFavorites} />
       </View>
     );
@@ -43,7 +46,7 @@ const FavoritesScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={containerStyle}>
       <Text style={styles.title}>My Favorites</Text>
       {favorites.length === 0 ? (
         <EmptyState message="You haven't added any favorites yet." />
